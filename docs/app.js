@@ -398,20 +398,33 @@ const app = {
     },
 
     async saveToken() {
-        const token = document.getElementById('settingsToken').value;
-        if (!token) {
+        const tokenEl = document.getElementById('settingsToken');
+        const token = tokenEl ? tokenEl.value : '';
+
+        if (!token || token.trim() === '') {
             this.showError('Введите токен');
             return;
         }
 
+        if (!this.password || this.password.trim() === '') {
+            this.showError('Пароль не установлен. Перезагрузитесь.');
+            return;
+        }
+
         try {
-            await API.encryptAndStoreToken(token, this.password);
-            this.token = token;
-            document.getElementById('settingsToken').value = '';
-            document.getElementById('tokenStatus').textContent = '✓ Токен сохранён';
-            this.showToast('Токен сохранён');
+            console.log('Encrypting and storing token...');
+            await API.encryptAndStoreToken(token.trim(), this.password);
+            this.token = token.trim();
+            if (tokenEl) tokenEl.value = '';
+
+            const statusEl = document.getElementById('tokenStatus');
+            if (statusEl) statusEl.textContent = '✓ Токен сохранён';
+
+            this.showToast('Токен сохранён успешно');
+            console.log('✓ Token saved');
         } catch (err) {
-            this.showError('Ошибка при сохранении токена: ' + err.message);
+            console.error('Token save failed:', err);
+            this.showError('Ошибка при сохранении токена: ' + (err?.message || err));
         }
     },
 
