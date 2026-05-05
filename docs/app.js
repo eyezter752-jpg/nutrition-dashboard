@@ -247,8 +247,12 @@ const app = {
             const todayEl = document.getElementById('todayCalories');
             if (!todayEl) return;
 
-            if (this.data.daily && this.data.daily[this.today]) {
-                const day = this.data.daily[this.today];
+            // Find last day with data
+            const dates = Object.keys(this.data.daily || {}).sort().reverse();
+            const lastDate = dates[0];
+
+            if (lastDate && this.data.daily[lastDate]) {
+                const day = this.data.daily[lastDate];
                 const targetEl = document.getElementById('todayTarget');
                 const proteinEl = document.getElementById('todayProtein');
                 const fatEl = document.getElementById('todayFat');
@@ -256,7 +260,7 @@ const app = {
                 const fillEl = document.getElementById('progressFill');
 
                 if (day.totals) {
-                    if (todayEl) todayEl.textContent = day.totals.kcal || '—';
+                    if (todayEl) todayEl.textContent = Math.round(day.totals.kcal || 0);
                     if (targetEl) targetEl.textContent = `/ ${this.config.calorie_target} ккал`;
                     if (proteinEl) proteinEl.textContent = Math.round(day.totals.protein || 0);
                     if (fatEl) fatEl.textContent = Math.round(day.totals.fat || 0);
@@ -297,7 +301,9 @@ const app = {
 
         try {
             container.innerHTML = '';
-            const today = new Date(this.today);
+            const dates = Object.keys(this.data.daily || {}).sort();
+            const lastDate = dates[dates.length - 1] || new Date().toISOString().split('T')[0];
+            const today = new Date(lastDate);
             const startDate = new Date(today);
             startDate.setDate(startDate.getDate() - 60);
 
@@ -310,7 +316,8 @@ const app = {
                 cell.className = 'heatmap-cell';
 
                 if (this.data.daily && this.data.daily[dateStr]) {
-                    cell.classList.add(this.data.daily[dateStr].zone || 'green');
+                    const zone = this.data.daily[dateStr].zone || 'green';
+                    cell.classList.add(`zone-${zone}`);
                 }
 
                 container.appendChild(cell);

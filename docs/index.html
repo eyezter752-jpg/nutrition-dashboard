@@ -639,9 +639,7 @@
 
             <nav class="tabs-nav desktop" id="tabsNav">
                 <button class="nav-btn active" data-tab="dashboard" onclick="app.switchTab('dashboard')">Дашборд</button>
-                <button class="nav-btn" data-tab="entry" onclick="app.switchTab('entry')">Запись дня</button>
                 <button class="nav-btn" data-tab="weight" onclick="app.switchTab('weight')">Вес</button>
-                <button class="nav-btn" data-tab="settings" onclick="app.switchTab('settings')">Настройки</button>
             </nav>
 
             <div class="tabs-content">
@@ -681,75 +679,6 @@
                     </div>
                 </div>
 
-                <!-- Entry Tab -->
-                <div class="tab-pane" id="entry-pane">
-                    <div class="card">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Дата</label>
-                                <input type="date" id="entryDate">
-                            </div>
-                            <div style="display: flex; align-items: flex-end;">
-                                <button class="btn btn-secondary" onclick="app.loadEntry()" style="width: 100%; margin-bottom: 0;">Загрузить</button>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Вес утром (кг)</label>
-                                <input type="number" id="entryWeight" step="0.1" min="50" max="150">
-                            </div>
-                            <div class="form-group">
-                                <label>Сон (часов)</label>
-                                <input type="number" id="entrySleep" step="0.5" min="0" max="12">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Тренировка</label>
-                            <input type="text" id="entryTraining" placeholder="Например: велодорожка 30 мин">
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Срыв</label>
-                                <select id="entryBinge">
-                                    <option value="false">Нет</option>
-                                    <option value="true">Да</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Настроение (1-5)</label>
-                                <select id="entryMood">
-                                    <option value="">—</option>
-                                    <option value="1">1 - Плохо</option>
-                                    <option value="2">2 - Так себе</option>
-                                    <option value="3">3 - Нормально</option>
-                                    <option value="4">4 - Хорошо</option>
-                                    <option value="5">5 - Отлично</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Meals -->
-                        <div id="mealsContainer"></div>
-
-                        <!-- Drinks -->
-                        <div class="card" style="margin-top: 1.5rem;">
-                            <h3>Жидкости</h3>
-                            <div class="drinks-grid" id="drinksGrid"></div>
-                        </div>
-
-                        <!-- Notes -->
-                        <div class="form-group">
-                            <label>Заметки</label>
-                            <textarea id="entryNotes" placeholder="Свободный текст..."></textarea>
-                        </div>
-
-                        <button class="btn btn-primary" onclick="app.saveEntry()">Сохранить</button>
-                        <button class="btn btn-secondary" onclick="app.downloadAsMarkdown()" style="margin-top: 0.5rem;">Скачать как MD</button>
-                    </div>
-                </div>
 
                 <!-- Weight Tab -->
                 <div class="tab-pane" id="weight-pane">
@@ -773,28 +702,6 @@
                     </div>
                 </div>
 
-                <!-- Settings Tab -->
-                <div class="tab-pane" id="settings-pane">
-                    <div class="card">
-                        <h3>GitHub Token</h3>
-                        <div id="tokenStatus">Загрузка...</div>
-                        <div class="form-group" style="margin-top: 1rem;">
-                            <label>Personal Access Token</label>
-                            <input type="password" id="settingsToken" placeholder="Вставьте новый токен">
-                            <small style="color: var(--text-tertiary); margin-top: 0.5rem; display: block;">
-                                <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color: var(--accent-blue);">Создать новый</a>
-                            </small>
-                        </div>
-                        <button class="btn btn-primary" onclick="app.saveToken()">Сохранить токен</button>
-                        <button class="btn btn-secondary" onclick="app.clearToken()" style="margin-top: 0.5rem;">Удалить токен</button>
-                    </div>
-
-                    <div class="card">
-                        <h3>Приложение</h3>
-                        <p>Версия: <strong id="appVersion">1.0.0</strong></p>
-                        <button class="btn btn-secondary" onclick="app.clearAllData()">Очистить локальные данные</button>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -808,13 +715,6 @@
                 </svg>
                 Дашборд
             </button>
-            <button class="nav-item" data-tab="entry" onclick="app.switchTab('entry')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                Запись
-            </button>
             <button class="nav-item" data-tab="weight" onclick="app.switchTab('weight')">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
@@ -822,13 +722,6 @@
                     <path d="M6 12h12"></path>
                 </svg>
                 Вес
-            </button>
-            <button class="nav-item" data-tab="settings" onclick="app.switchTab('settings')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24"></path>
-                </svg>
-                Настройки
             </button>
         </nav>
     </div>
@@ -855,8 +748,8 @@
         </div>
     </div>
 
-    <script src="crypto.js?v=1777999513"></script>
-    <script src="api.js?v=1777999513"></script>
-    <script src="app.js?v=1777999513"></script>
+    <script src="crypto.js?v=1778001255"></script>
+    <script src="api.js?v=1778001255"></script>
+    <script src="app.js?v=1778001255"></script>
 </body>
 </html>

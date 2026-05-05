@@ -594,3 +594,39 @@ select:focus {
 .fade-in {
   animation: fadeIn var(--transition-normal) ease-in-out;
 }
+
+/* ==================== DASHBOARD SPECIFIC ==================== */
+#todayCalories {
+  font-size: clamp(48px, 12vw, 84px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.heatmap-cell.zone-green {
+  background: var(--color-zone-green);
+}
+
+.heatmap-cell.zone-yellow {
+  background: var(--color-zone-yellow);
+}
+
+.heatmap-cell.zone-red {
+  background: var(--color-zone-red);
+}
+
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-sm);
+}
