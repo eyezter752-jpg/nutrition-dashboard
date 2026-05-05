@@ -1,0 +1,9 @@
+meals/
+data/raw/
+data/unknown_products.txt
+.password
+.env
+__pycache__/
+*.pyc
+.DS_Store
+*.log

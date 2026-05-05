@@ -1,0 +1,586 @@
+#!/usr/bin/env python3
+"""
+Сборщик дашборда с AES-256-GCM шифрованием.
+Читает daily.json, weight.json, config.json, шифрует и вставляет в HTML.
+"""
+
+import json
+import base64
+import os
+import sys
+import io
+from pathlib import Path
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import secrets
+import hashlib
+
+# Фиксим кодировку для Windows
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+def get_password():
+    """Получить пароль из окружения или файла"""
+    # Сначала проверяем переменную окружения
+    pwd = os.environ.get('DASHBOARD_PASSWORD')
+    if pwd:
+        return pwd
+
+    # Затем файл .password
+    if Path('.password').exists():
+        with open('.password', 'r') as f:
+            pwd = f.read().strip()
+            if pwd:
+                return pwd
+
+    # Если ничего не найдено - ошибка
+    print('❌ Не установлен пароль. Установите DASHBOARD_PASSWORD или создайте .password')
+    sys.exit(1)
+
+def load_data():
+    """Загрузить все данные"""
+    with open('data/daily.json', 'r', encoding='utf-8') as f:
+        daily = json.load(f)
+
+    with open('data/weight.json', 'r', encoding='utf-8') as f:
+        weight = json.load(f) if Path('data/weight.json').exists() else {}
+
+    with open('data/config.json', 'r', encoding='utf-8') as f:
+        config = json.load(f)
+
+    return {'daily': daily, 'weight': weight, 'config': config}
+
+def derive_key(password, salt):
+    """Вывести ключ PBKDF2"""
+    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000, dklen=32)
+
+def encrypt_data(data, password):
+    """Зашифровать данные AES-256-GCM"""
+    # Генерируем salt и IV
+    salt = secrets.token_bytes(16)
+    iv = secrets.token_bytes(12)
+
+    # Выводим ключ
+    key = derive_key(password, salt)
+
+    # Шифруем
+    cipher = AESGCM(key)
+    plaintext = json.dumps(data, ensure_ascii=False).encode('utf-8')
+    ciphertext = cipher.encrypt(iv, plaintext, None)
+
+    # Кодируем в base64
+    salt_b64 = base64.b64encode(salt).decode('ascii')
+    iv_b64 = base64.b64encode(iv).decode('ascii')
+    ciphertext_b64 = base64.b64encode(ciphertext).decode('ascii')
+
+    return {
+        'salt': salt_b64,
+        'iv': iv_b64,
+        'ciphertext': ciphertext_b64
+    }
+
+def build_dashboard():
+    """Собрать дашборд"""
+    password = get_password()
+    data = load_data()
+
+    print(f'🔐 Зашифровываю данные...')
+    encrypted = encrypt_data(data, password)
+
+    # HTML шаблон
+    html = '''<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд питания</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-light: #ffffff;
+            --bg-dark: #1f2937;
+            --text-light: #111827;
+            --text-dark: #f3f4f6;
+            --border: #e5e7eb;
+        }
+        body.dark-mode {
+            --bg-light: #1f2937;
+            --bg-dark: #111827;
+            --text-light: #f3f4f6;
+            --text-dark: #111827;
+            --border: #4b5563;
+        }
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-light);
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            max-width: 768px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .password-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .password-form {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .password-form h1 {
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+        .password-form p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .password-form input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        .password-form button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .password-form button:hover {
+            opacity: 0.9;
+        }
+        .password-form .error {
+            color: var(--danger);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .dashboard { display: none; }
+        .dashboard.visible { display: block; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .header h1 { font-size: 1.25rem; }
+        .theme-toggle {
+            background: var(--border);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .card {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-size: 0.875rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        .calories-big {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+        .calories-target {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+        }
+        .progress-fill.green { background: var(--primary); }
+        .progress-fill.yellow { background: var(--warning); }
+        .progress-fill.red { background: var(--danger); }
+        .macros {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .macro {
+            text-align: center;
+        }
+        .macro-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        .macro-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+        .meals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .meal-bar {
+            background: var(--border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .meal-name { color: #6b7280; font-size: 0.85rem; }
+        .meal-kcal { font-size: 1.25rem; font-weight: 600; margin-top: 0.25rem; }
+        .heatmap {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-top: 1rem;
+        }
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .heatmap-cell:hover { transform: scale(1.1); }
+        .heatmap-cell.green { background: var(--primary); }
+        .heatmap-cell.yellow { background: var(--warning); }
+        .heatmap-cell.red { background: var(--danger); }
+        .heatmap-cell.gray { background: var(--border); }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .stat-label { color: #6b7280; }
+        .stat-value { font-weight: 600; }
+        .drinks {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+        .drink-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .drink-emoji { font-size: 1.5rem; }
+        @media (max-width: 640px) {
+            .meals-grid { grid-template-columns: 1fr; }
+            .macros { grid-template-columns: 1fr; gap: 0.5rem; }
+            .calories-big { font-size: 2.5rem; }
+            .password-form { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="password-screen" id="passwordScreen">
+        <div class="password-form">
+            <h1>🍽️ Дашборд</h1>
+            <p>Введите пароль для доступа</p>
+            <input type="password" id="passwordInput" placeholder="Пароль">
+            <button onclick="authenticate()">Войти</button>
+            <div class="error" id="errorMsg">Неверный пароль</div>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="container">
+            <div class="header">
+                <div>
+                    <h1 id="headerTitle">Дашборд питания</h1>
+                    <div id="currentDate" style="color: #6b7280; font-size: 0.9rem;"></div>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Сегодня</div>
+                <div class="calories-big" id="todayCalories">—</div>
+                <div class="calories-target" id="todayTarget">—</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 50%"></div>
+                </div>
+                <div class="macros">
+                    <div class="macro">
+                        <div class="macro-value" id="todayProtein">—</div>
+                        <div class="macro-label">Белки</div>
+                    </div>
+                    <div class="macro">
+                        <div class="macro-value" id="todayFat">—</div>
+                        <div class="macro-label">Жиры</div>
+                    </div>
+                    <div class="macro">
+                        <div class="macro-value" id="todayCarbs">—</div>
+                        <div class="macro-label">Углеводы</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Вес</div>
+                <div class="calories-big" id="currentWeight">—</div>
+                <div class="calories-target" id="weightChange">—</div>
+                <div class="progress-bar">
+                    <div class="progress-fill green" id="weightProgress" style="width: 50%"></div>
+                </div>
+                <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
+                    Цель: 80 кг
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Приёмы пищи</div>
+                <div class="meals-grid" id="mealsGrid"></div>
+                <div style="color: #6b7280; font-size: 0.85rem; margin-top: 1rem;">
+                    <strong>Вечер:</strong> <span id="eveningCalories">—</span> ккал (цель: 620)
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Жидкости за день</div>
+                <div class="drinks" id="drinksDisplay"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Календарь (60 дней)</div>
+                <div class="heatmap" id="heatmap"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Сводка за неделю</div>
+                <div class="stats" id="weekStats"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="crypto.js"></script>
+    <script>
+        let encryptedData = ''' + json.dumps(encrypted) + ''';
+        let decryptedData = null;
+
+        async function authenticate() {
+            const password = document.getElementById('passwordInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+
+            try {
+                decryptedData = await decrypt(
+                    password,
+                    encryptedData.salt,
+                    encryptedData.iv,
+                    encryptedData.ciphertext
+                );
+                document.getElementById('passwordScreen').style.display = 'none';
+                document.getElementById('dashboard').classList.add('visible');
+                renderDashboard();
+            } catch (err) {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function renderDashboard() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayData = decryptedData.daily[today];
+            const config = decryptedData.config;
+
+            // Заголовок
+            document.getElementById('currentDate').textContent = new Date(today).toLocaleDateString('ru-RU', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            if (todayData) {
+                // Сегодня
+                const kcal = todayData.totals.kcal;
+                const percent = Math.min((kcal / config.calorie_target) * 100, 100);
+                document.getElementById('todayCalories').textContent = kcal;
+                document.getElementById('todayTarget').textContent = `${kcal} / ${config.calorie_target} ккал`;
+                document.getElementById('todayProtein').textContent = Math.round(todayData.totals.protein);
+                document.getElementById('todayFat').textContent = Math.round(todayData.totals.fat);
+                document.getElementById('todayCarbs').textContent = Math.round(todayData.totals.carbs);
+
+                const fill = document.getElementById('progressFill');
+                fill.style.width = percent + '%';
+                fill.className = 'progress-fill ' + todayData.zone;
+
+                // Приёмы пищи
+                const mealsGrid = document.getElementById('mealsGrid');
+                mealsGrid.innerHTML = '';
+                for (const [meal, kcal] of Object.entries(todayData.by_meal)) {
+                    const div = document.createElement('div');
+                    div.className = 'meal-bar';
+                    div.innerHTML = `<div class="meal-name">${meal}</div><div class="meal-kcal">${kcal}</div>`;
+                    mealsGrid.appendChild(div);
+                }
+
+                // Вечер
+                document.getElementById('eveningCalories').textContent = todayData.evening_kcal;
+
+                // Жидкости
+                const drinksDisplay = document.getElementById('drinksDisplay');
+                drinksDisplay.innerHTML = `
+                    <div class="drink-item">
+                        <span class="drink-emoji">☕</span>
+                        <span>${todayData.drinks.coffee_count}/${config.coffee_max_per_day}</span>
+                    </div>
+                    <div class="drink-item">
+                        <span class="drink-emoji">🍵</span>
+                        <span>${todayData.drinks.tea_count}</span>
+                    </div>
+                    <div class="drink-item">
+                        <span class="drink-emoji">💧</span>
+                        <span>${(todayData.drinks.water_ml / 1000).toFixed(1)}/${config.water_target_l}л</span>
+                    </div>
+                `;
+            }
+
+            // Вес
+            const weights = Object.entries(decryptedData.weight || {})
+                .sort()
+                .slice(-30);
+            if (weights.length > 0) {
+                const lastWeight = weights[weights.length - 1][1];
+                const firstWeight = weights[0][1];
+                const change = (lastWeight - firstWeight).toFixed(1);
+                const target = config.weight_target_kg;
+                const startWeight = 90;
+                const progress = Math.max(0, (startWeight - lastWeight) / (startWeight - target) * 100);
+
+                document.getElementById('currentWeight').textContent = lastWeight.toFixed(1) + ' кг';
+                document.getElementById('weightChange').textContent =
+                    (change > 0 ? '+' : '') + change + ' кг за 30 дней';
+                document.getElementById('weightProgress').style.width = Math.min(progress, 100) + '%';
+            }
+
+            // Календарь
+            const heatmap = document.getElementById('heatmap');
+            heatmap.innerHTML = '';
+            const dates = Object.keys(decryptedData.daily).sort();
+            const last60 = dates.slice(-60);
+
+            for (let i = 0; i < 60; i++) {
+                const div = document.createElement('div');
+                div.className = 'heatmap-cell';
+
+                const idx = i - (60 - last60.length);
+                if (idx >= 0 && idx < last60.length) {
+                    const date = last60[idx];
+                    const dayData = decryptedData.daily[date];
+                    div.className = 'heatmap-cell ' + dayData.zone;
+                    div.textContent = new Date(date).getDate();
+                } else {
+                    div.className = 'heatmap-cell gray';
+                }
+
+                heatmap.appendChild(div);
+            }
+
+            // Сводка за неделю
+            const weekStats = document.getElementById('weekStats');
+            const last7 = dates.slice(-7);
+            let weekKcal = 0, greenDays = 0, trainingDays = 0;
+
+            for (const date of last7) {
+                const dayData = decryptedData.daily[date];
+                weekKcal += dayData.totals.kcal;
+                if (dayData.zone === 'green') greenDays++;
+                if (dayData.training) trainingDays++;
+            }
+
+            weekStats.innerHTML = `
+                <div class="stat-row">
+                    <span class="stat-label">Ср. ккал/день</span>
+                    <span class="stat-value">${Math.round(weekKcal / last7.length)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Дней в норме</span>
+                    <span class="stat-value">${greenDays}/7</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Тренировок</span>
+                    <span class="stat-value">${trainingDays}</span>
+                </div>
+            `;
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+
+        // Восстанавливаем тему
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Enter для отправки пароля
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') authenticate();
+        });
+    </script>
+</body>
+</html>'''
+
+    with open('docs/index.html', 'w', encoding='utf-8') as f:
+        f.write(html)
+
+    print(f'✓ docs/index.html собран')
+
+if __name__ == '__main__':
+    build_dashboard()
