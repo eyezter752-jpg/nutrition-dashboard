@@ -1,112 +1,75 @@
 #!/usr/bin/env python3
-"""
-Сборщик дашборда с AES-256-GCM шифрованием.
-Читает daily.json, weight.json, config.json, шифрует и вставляет в HTML.
-"""
-
-import json
-import base64
-import os
-import sys
-import io
-import hashlib
-import time
+"""Собирает дашборд: шифрует data/*.json, вставляет в docs/index.html на место __ENCRYPTED_PAYLOAD__."""
+import json, os, base64, sys, io
 from pathlib import Path
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import secrets
 
-# Фиксим кодировку для Windows
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+ROOT = Path(__file__).resolve().parent.parent
 
 def get_password():
-    """Получить пароль из окружения или файла"""
-    # Сначала проверяем переменную окружения
-    pwd = os.environ.get('DASHBOARD_PASSWORD')
-    if pwd:
-        return pwd
+    pw_file = ROOT / '.password'
+    if pw_file.exists():
+        return pw_file.read_text(encoding='utf-8').strip()
+    pw = os.environ.get('DASHBOARD_PASSWORD')
+    if not pw:
+        raise RuntimeError("Нет .password или DASHBOARD_PASSWORD")
+    return pw
 
-    # Затем файл .password
-    if Path('.password').exists():
-        with open('.password', 'r') as f:
-            pwd = f.read().strip()
-            if pwd:
-                return pwd
+def load_json(path, default):
+    p = ROOT / path
+    if p.exists():
+        return json.loads(p.read_text(encoding='utf-8'))
+    return default
 
-    # Если ничего не найдено - ошибка
-    print('❌ Не установлен пароль. Установите DASHBOARD_PASSWORD или создайте .password')
-    sys.exit(1)
-
-def load_data():
-    """Загрузить все данные"""
-    with open('data/daily.json', 'r', encoding='utf-8') as f:
-        daily = json.load(f)
-
-    with open('data/weight.json', 'r', encoding='utf-8') as f:
-        weight = json.load(f) if Path('data/weight.json').exists() else {}
-
-    with open('data/config.json', 'r', encoding='utf-8') as f:
-        config = json.load(f)
-
-    return {'daily': daily, 'weight': weight, 'config': config}
-
-def derive_key(password, salt):
-    """Вывести ключ PBKDF2"""
-    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000, dklen=32)
-
-def encrypt_data(data, password):
-    """Зашифровать данные AES-256-GCM"""
-    # Генерируем salt и IV
+def encrypt(plaintext_bytes, password):
     salt = secrets.token_bytes(16)
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100000)
+    key = kdf.derive(password.encode('utf-8'))
     iv = secrets.token_bytes(12)
-
-    # Выводим ключ
-    key = derive_key(password, salt)
-
-    # Шифруем
-    cipher = AESGCM(key)
-    plaintext = json.dumps(data, ensure_ascii=False).encode('utf-8')
-    ciphertext = cipher.encrypt(iv, plaintext, None)
-
-    # Кодируем в base64
-    salt_b64 = base64.b64encode(salt).decode('ascii')
-    iv_b64 = base64.b64encode(iv).decode('ascii')
-    ciphertext_b64 = base64.b64encode(ciphertext).decode('ascii')
-
+    aesgcm = AESGCM(key)
+    ct = aesgcm.encrypt(iv, plaintext_bytes, None)
     return {
-        'salt': salt_b64,
-        'iv': iv_b64,
-        'ciphertext': ciphertext_b64
+        'salt': base64.b64encode(salt).decode('ascii'),
+        'iv': base64.b64encode(iv).decode('ascii'),
+        'ciphertext': base64.b64encode(ct).decode('ascii'),
     }
 
-def build_dashboard():
-    """Собрать дашборд: обновить версию в index.html для обхода кэша"""
+def main():
+    pw = get_password()
+    payload = {
+        'daily': load_json('data/daily.json', {}),
+        'weight': load_json('data/weight.json', {}),
+        'config': load_json('data/config.json', {}),
+    }
+    print(f"📊 Собираю дашборд:")
+    print(f"   daily: {len(payload['daily'])} дней")
+    print(f"   weight: {len(payload['weight'])} замеров")
+    print(f"   config: {len(payload['config'])} настроек")
 
-    print(f'🔄 Обновляю версию index.html для обхода браузерного кэша...')
+    plaintext = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+    encrypted = encrypt(plaintext, pw)
+    encrypted_json = json.dumps(encrypted)
+    print(f"   шифртекст: {len(encrypted['ciphertext'])} базовых64 символов")
 
-    # Читаем текущий index.html
-    index_path = Path('docs/index.html')
-    if not index_path.exists():
-        print('⚠️  docs/index.html не найден, пропускаю обновление версии')
-        return
+    template_path = ROOT / 'docs' / 'index.template.html'
+    if not template_path.exists():
+        raise RuntimeError(f"Шаблон {template_path} не найден")
 
-    with open(index_path, 'r', encoding='utf-8') as f:
-        html = f.read()
+    template = template_path.read_text(encoding='utf-8')
+    marker = '__ENCRYPTED_PAYLOAD__'
+    if marker not in template:
+        raise RuntimeError(f"Маркер {marker} не найден в шаблоне")
 
-    # Генерируем версию (timestamp)
-    version = str(int(time.time()))
+    new_html = template.replace(marker, encrypted_json, 1)
 
-    # Обновляем версию в импортах скриптов
-    html = __import__('re').sub(
-        r'src="(crypto|api|app)\.js(\?v=\d+)?"',
-        f'src="\\1.js?v={version}"',
-        html
-    )
-
-    with open(index_path, 'w', encoding='utf-8') as f:
-        f.write(html)
-
-    print(f'✓ Версия обновлена: v={version}')
+    output_path = ROOT / 'docs' / 'index.html'
+    output_path.write_text(new_html, encoding='utf-8')
+    print(f"✅ docs/index.html: {len(new_html)} bytes")
 
 if __name__ == '__main__':
-    build_dashboard()
+    main()
