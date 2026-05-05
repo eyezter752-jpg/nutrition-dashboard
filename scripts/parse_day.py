@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-Парсер дневного Markdown-файла питания.
-Читает meals/{date}.md, считает КБЖУ, обновляет data/daily.json
+Парсер дневного файла питания (Markdown или зашифрованный JSON).
+Читает meals/{date}.md или meals/{date}.json.enc, считает КБЖУ, обновляет data/daily.json
 """
 
 import json
 import sys
 import re
 import io
+import os
+import base64
+import hashlib
 from datetime import datetime
 from pathlib import Path
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # Фиксим кодировку для Windows
 if sys.platform == 'win32':
@@ -45,6 +49,62 @@ def load_weight_data():
         with open('data/weight.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     return {}
+
+def get_password():
+    """Получить пароль из окружения или файла"""
+    pwd = os.environ.get('DASHBOARD_PASSWORD')
+    if pwd:
+        return pwd
+    if Path('.password').exists():
+        with open('.password', 'r') as f:
+            pwd = f.read().strip()
+            if pwd:
+                return pwd
+    raise RuntimeError('Пароль не найден. Установите DASHBOARD_PASSWORD или создайте .password')
+
+def decrypt_json_meal(file_path: str, password: str) -> dict:
+    """Расшифровать .json.enc файл"""
+    with open(file_path, 'rb') as f:
+        content = f.read()
+
+    data = json.loads(content.decode('utf-8'))
+    salt = base64.b64decode(data['salt'])
+    iv = base64.b64decode(data['iv'])
+    ciphertext = base64.b64decode(data['ciphertext'])
+
+    key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000, dklen=32)
+    cipher = AESGCM(key)
+    plaintext = cipher.decrypt(iv, ciphertext, None)
+
+    return json.loads(plaintext.decode('utf-8'))
+
+def convert_json_meal_to_md_format(meal_data: dict) -> tuple[dict, dict]:
+    """Конвертировать JSON формат питания в структуру приёмов пищи и жидкостей"""
+    meals = {
+        'завтрак': [],
+        '2-й завтрак': [],
+        'обед': [],
+        'полдник': [],
+        'ужин': [],
+        'поздний перекус': []
+    }
+
+    # Преобразуем meals
+    for meal_name, items in meal_data.get('meals', {}).items():
+        if meal_name in meals:
+            for item in items:
+                product = item.get('product', '')
+                amount = item.get('grams') or item.get('pieces')
+                unit = 'г' if 'grams' in item else ('шт' if 'pieces' in item else 'г')
+                if amount:
+                    meals[meal_name].append(f"{product} {amount} {unit}")
+                else:
+                    meals[meal_name].append(product)
+
+    # Преобразуем drinks
+    drinks = meal_data.get('drinks', {})
+
+    return meals, drinks
 
 def parse_frontmatter(content):
     """Извлечь фронтмэттер из markdown"""
@@ -234,25 +294,55 @@ def get_day_of_week(date_str):
     except:
         return 'Пн'
 
-def process_day(date_str):
-    """Обработать день"""
-    file_path = Path(f'meals/{date_str}.md')
+def process_day(date_str, source_file: str = None):
+    """Обработать день (из MD или .json.enc файла)"""
+    if source_file is None:
+        md_path = Path(f'meals/{date_str}.md')
+        json_path = Path(f'meals/{date_str}.json.enc')
+        if md_path.exists():
+            source_file = str(md_path)
+        elif json_path.exists():
+            source_file = str(json_path)
+        else:
+            print(f'Файл meals/{date_str}.md или meals/{date_str}.json.enc не найден')
+            return
 
+    file_path = Path(source_file)
     if not file_path.exists():
         print(f'Файл {file_path} не найден')
         return
-
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
 
     config = load_config()
     products, product_index = load_products()
     daily_data = load_daily_data()
     weight_data = load_weight_data()
 
-    # Парсим фронтмэттер и приёмы пищи
-    fm = parse_frontmatter(content)
-    meals = parse_meals(content)
+    # Определяем формат и парсим
+    if str(file_path).endswith('.json.enc'):
+        password = get_password()
+        meal_data = decrypt_json_meal(str(file_path), password)
+        fm = {
+            'weight_morning': meal_data.get('weight_morning'),
+            'sleep_hours': meal_data.get('sleep_hours'),
+            'training': meal_data.get('training'),
+            'binge': meal_data.get('binge', False),
+            'mood': meal_data.get('mood'),
+        }
+        meals, drinks_data = convert_json_meal_to_md_format(meal_data)
+        # Преобразуем drinks в формат liquids
+        liquids = {
+            'coffee_count': drinks_data.get('Кофе молотый с молоком 200мл', 0),
+            'tea_count': sum(drinks_data.get(k, 0) for k in drinks_data if 'Чай' in k),
+            'water_ml': int((drinks_data.get('Вода стакан 200мл', 0) or 0) * 200 + (drinks_data.get('Вода с газом литры', 0) or 0) * 1000),
+            'items': []
+        }
+    else:
+        # MD формат
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        fm = parse_frontmatter(content)
+        meals = parse_meals(content)
+        liquids = parse_liquids_table(content)
 
     # Инициализируем запись дня
     day_record = {
@@ -266,7 +356,7 @@ def process_day(date_str):
         'totals': {'kcal': 0, 'protein': 0, 'fat': 0, 'carbs': 0},
         'evening_kcal': 0,
         'by_meal': {},
-        'drinks': parse_liquids_table(content),
+        'drinks': liquids,
         'stoplist_hits': [],
         'zone': 'green',
         'unknown_products': []
@@ -354,8 +444,16 @@ def process_day(date_str):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        date = sys.argv[1]
+        arg = sys.argv[1]
+        # Если передан путь к файлу (содержит /)
+        if '/' in arg or '\\' in arg or arg.endswith('.json.enc') or arg.endswith('.md'):
+            source_file = arg
+            # Пытаемся извлечь дату из имени файла
+            file_stem = Path(arg).stem
+            process_day(file_stem, source_file=source_file)
+        else:
+            # Иначе это дата
+            process_day(arg)
     else:
         date = datetime.now().strftime('%Y-%m-%d')
-
-    process_day(date)
+        process_day(date)

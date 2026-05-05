@@ -1,1 +1,105 @@
-{}
+{
+  "2026-05-04": {
+    "date": "2026-05-04",
+    "day_of_week": "Пн",
+    "weight_morning": "null",
+    "sleep_hours": "null",
+    "training": "null",
+    "binge": true,
+    "mood": "null",
+    "totals": {
+      "kcal": 2952,
+      "protein": 211.00000000000003,
+      "fat": 96.60000000000001,
+      "carbs": 324.8
+    },
+    "evening_kcal": 1819,
+    "by_meal": {
+      "завтрак": 270,
+      "2-й завтрак": 0,
+      "обед": 863,
+      "полдник": 0,
+      "ужин": 1819,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 2,
+      "tea_count": 0,
+      "water_ml": 1000,
+      "items": [
+        {
+          "drink": "---",
+          "volume": "---",
+          "count": 0
+        },
+        {
+          "drink": "кофе молотый с молоком и сахаром",
+          "volume": "200 мл",
+          "count": 2
+        },
+        {
+          "drink": "вода с газом",
+          "volume": "литры",
+          "count": 1
+        }
+      ]
+    },
+    "stoplist_hits": [
+      "Чудо творожок",
+      "Конфеты шоколадные",
+      "Пельмени",
+      "Крабовые палочки"
+    ],
+    "zone": "red",
+    "unknown_products": []
+  },
+  "2026-05-05": {
+    "date": "2026-05-05",
+    "day_of_week": "Вт",
+    "weight_morning": "null",
+    "sleep_hours": "null",
+    "training": "null",
+    "binge": false,
+    "mood": "null",
+    "totals": {
+      "kcal": 1875,
+      "protein": 107.8,
+      "fat": 106.8,
+      "carbs": 127.7
+    },
+    "evening_kcal": 868,
+    "by_meal": {
+      "завтрак": 808,
+      "2-й завтрак": 0,
+      "обед": 199,
+      "полдник": 0,
+      "ужин": 868,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 2,
+      "tea_count": 0,
+      "water_ml": 4000,
+      "items": [
+        {
+          "drink": "---",
+          "volume": "---",
+          "count": 0
+        },
+        {
+          "drink": "кофе молотый с молоком и сахаром",
+          "volume": "200 мл",
+          "count": 2
+        },
+        {
+          "drink": "вода (стакан)",
+          "volume": "200 мл",
+          "count": 4
+        }
+      ]
+    },
+    "stoplist_hits": [],
+    "zone": "green",
+    "unknown_products": []
+  }
+}
