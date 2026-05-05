@@ -31,7 +31,7 @@
    - Выберите Source: `main branch` → `/docs` folder
    - Сохраните
 
-5. **Откройте дашборд**: `https://YOUR_USERNAME.github.io/nutrition-dashboard/` (или просто откройте `docs/index.html` локально)
+5. **Откройте дашборд**: `https://eyezter752-jpg.github.io/nutrition-dashboard/` (или просто откройте `docs/index.html` локально)
 
 ### Каждый день
 
