@@ -4,7 +4,8 @@
     "day_of_week": "Пн",
     "weight_morning": "null",
     "sleep_hours": "null",
-    "training": "null",
+    "training_done": false,
+    "training_text": null,
     "binge": true,
     "mood": "null",
     "totals": {
@@ -58,7 +59,8 @@
     "day_of_week": "Вт",
     "weight_morning": "null",
     "sleep_hours": "null",
-    "training": "null",
+    "training_done": false,
+    "training_text": null,
     "binge": false,
     "mood": "null",
     "totals": {
@@ -100,6 +102,50 @@
     },
     "stoplist_hits": [],
     "zone": "green",
+    "unknown_products": []
+  },
+  "2026-05-06": {
+    "date": "2026-05-06",
+    "day_of_week": "Ср",
+    "weight_morning": "null",
+    "sleep_hours": "null",
+    "training": "null",
+    "binge": false,
+    "mood": "null",
+    "totals": {
+      "kcal": 2362,
+      "protein": 178.30000000000004,
+      "fat": 110.89999999999999,
+      "carbs": 167.4
+    },
+    "evening_kcal": 1022,
+    "by_meal": {
+      "завтрак": 498,
+      "2-й завтрак": 0,
+      "обед": 842,
+      "полдник": 0,
+      "ужин": 1022,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 3,
+      "tea_count": 0,
+      "water_ml": 0,
+      "items": [
+        {
+          "drink": "---",
+          "volume": "---",
+          "count": 0
+        },
+        {
+          "drink": "кофе молотый с молоком и сахаром",
+          "volume": "200 мл",
+          "count": 3
+        }
+      ]
+    },
+    "stoplist_hits": [],
+    "zone": "red",
     "unknown_products": []
   }
 }

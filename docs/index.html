@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0e1116">
 <title>Дашборд питания</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
 :root {
   --bg: #0e1116;
@@ -19,18 +20,17 @@
   --yellow: #d29922;
   --red: #f85149;
   --blue: #58a6ff;
+  --purple: #a371f7;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: var(--bg); color: var(--text); min-height: 100vh; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   font-feature-settings: "tnum" 1;
-  font-size: 15px;
-  line-height: 1.5;
-  padding-bottom: 100px;
+  font-size: 15px; line-height: 1.5; padding-bottom: 100px;
 }
 
-/* PASSWORD SCREEN */
+/* AUTH */
 #auth { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; background: var(--bg); }
 #auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; }
 #auth-card h1 { font-size: 22px; margin-bottom: 8px; }
@@ -43,57 +43,72 @@ body {
 /* APP */
 #app { max-width: 720px; margin: 0 auto; padding: 16px; display: none; }
 #app.visible { display: block; }
-.page-title { font-size: 14px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 500; }
+.title { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; font-weight: 600; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
 
-/* CARD */
-.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+/* HEATMAP */
+.heatmap { display: grid; grid-template-columns: repeat(15, 1fr); gap: 5px; }
+.cell { aspect-ratio: 1; border-radius: 4px; background: var(--border); cursor: pointer; transition: transform 0.1s; }
+.cell:hover, .cell.active { transform: scale(1.15); outline: 2px solid var(--text); outline-offset: 1px; }
+.cell.full-green { background: var(--green); }
+.cell.full-red { background: var(--red); }
+.cell.top-green { background: linear-gradient(to bottom, var(--green) 50%, var(--red) 50%); }
+.cell.top-red { background: linear-gradient(to bottom, var(--red) 50%, var(--green) 50%); }
+.cell.weight-yes { background: var(--blue); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: 11px; color: var(--text-dim); }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+.lg-full-green { background: var(--green); }
+.lg-full-red { background: var(--red); }
+.lg-top-green { background: linear-gradient(to bottom, var(--green) 50%, var(--red) 50%); }
+.lg-top-red { background: linear-gradient(to bottom, var(--red) 50%, var(--green) 50%); }
 
 /* HERO */
 .hero-date { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
 .hero-kcal { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -2px; }
 .hero-target { font-size: 18px; color: var(--text-dim); font-weight: 500; }
 .hero-zone-green .hero-kcal { color: var(--green); }
-.hero-zone-yellow .hero-kcal { color: var(--yellow); }
 .hero-zone-red .hero-kcal { color: var(--red); }
 .hero-bar { height: 6px; background: var(--bg); border-radius: 3px; margin-top: 14px; overflow: hidden; }
 .hero-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.5s; }
-.hero-zone-yellow .hero-bar-fill { background: var(--yellow); }
 .hero-zone-red .hero-bar-fill { background: var(--red); }
-
-/* MACROS */
 .macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
 .macro { text-align: center; padding: 12px 8px; background: var(--bg); border-radius: 10px; }
 .macro-value { font-size: 22px; font-weight: 600; }
 .macro-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
 
-/* MEALS */
-.meal-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.meal-row:last-child { border-bottom: none; }
-.meal-name { flex: 0 0 130px; font-size: 13px; color: var(--text-dim); }
-.meal-bar { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin: 0 12px; }
-.meal-bar-fill { height: 100%; background: var(--blue); border-radius: 4px; }
-.meal-kcal { flex: 0 0 60px; text-align: right; font-size: 14px; font-weight: 600; }
-
-/* HEATMAP */
-.heatmap { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
-.cell { aspect-ratio: 1; border-radius: 3px; background: var(--border); cursor: pointer; }
-.cell.green { background: var(--green); }
-.cell.yellow { background: var(--yellow); }
-.cell.red { background: var(--red); }
-
 /* STOPLIST */
 .flag { display: inline-block; padding: 4px 10px; background: rgba(248,81,73,0.15); color: var(--red); border-radius: 12px; font-size: 12px; margin-right: 6px; margin-bottom: 6px; }
 
-/* WEIGHT CHART */
-.chart-wrap { height: 220px; position: relative; }
+/* WEIGHT */
+.weight-now { font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -2px; }
+.weight-unit { font-size: 22px; color: var(--text-dim); font-weight: 500; }
+.weight-info { color: var(--text-dim); font-size: 13px; margin-top: 8px; }
+.chart-wrap { height: 240px; position: relative; }
 
 /* TABS */
 nav.tabs { position: fixed; bottom: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(2, 1fr); background: var(--bg-card); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
 nav.tabs button { background: none; border: none; padding: 14px; color: var(--text-dim); font-size: 14px; cursor: pointer; }
 nav.tabs button.active { color: var(--blue); font-weight: 600; }
-
 .section { display: none; }
 .section.active { display: block; }
+
+/* BOTTOM SHEET */
+#sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg-card); border-top: 1px solid var(--border); border-radius: 16px 16px 0 0; padding: 18px 18px 90px 18px; z-index: 60; transform: translateY(100%); transition: transform 0.25s; box-shadow: 0 -8px 30px rgba(0,0,0,0.5); max-height: 70vh; overflow-y: auto; }
+#sheet.visible { transform: translateY(0); }
+#sheet-close { position: absolute; right: 14px; top: 14px; background: none; border: none; color: var(--text-dim); font-size: 22px; cursor: pointer; padding: 4px 8px; }
+#sheet-date { font-size: 14px; color: var(--text-dim); margin-bottom: 4px; }
+#sheet-kcal { font-size: 36px; font-weight: 700; line-height: 1; }
+#sheet-zone { display: inline-block; margin-left: 8px; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; vertical-align: middle; }
+#sheet-zone.green { background: rgba(63,185,80,0.18); color: var(--green); }
+#sheet-zone.red { background: rgba(248,81,73,0.18); color: var(--red); }
+.sheet-line { padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 14px; }
+.sheet-line:last-child { border-bottom: none; }
+.sheet-line .lbl { color: var(--text-dim); }
+.sheet-meta { margin-top: 14px; font-size: 13px; color: var(--text-dim); }
+.sheet-meta b { color: var(--text); font-weight: 600; }
+#backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 55; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+#backdrop.visible { opacity: 1; pointer-events: all; }
 
 /* DEBUG */
 #debug { display: none; padding: 16px; background: var(--bg-card); border: 1px solid var(--red); border-radius: 12px; margin-bottom: 16px; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow: auto; }
@@ -102,7 +117,7 @@ nav.tabs button.active { color: var(--blue); font-weight: 600; }
 @media (max-width: 480px) {
   .hero-kcal { font-size: 52px; }
   .heatmap { grid-template-columns: repeat(10, 1fr); }
-  .meal-name { flex-basis: 100px; }
+  .weight-now { font-size: 46px; }
 }
 </style>
 </head>
@@ -121,7 +136,22 @@ nav.tabs button.active { color: var(--blue); font-weight: 600; }
 <main id="app">
   <pre id="debug"></pre>
 
+  <!-- DASHBOARD -->
   <section class="section active" data-section="dashboard">
+
+    <!-- HEATMAP — наверху -->
+    <div class="card">
+      <div class="title">Последние 60 дней</div>
+      <div class="heatmap" id="heatmap-cal"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch lg-full-green"></span>норма + тренировка</span>
+        <span class="legend-item"><span class="legend-swatch lg-top-green"></span>только норма</span>
+        <span class="legend-item"><span class="legend-swatch lg-top-red"></span>только тренировка</span>
+        <span class="legend-item"><span class="legend-swatch lg-full-red"></span>срыв</span>
+      </div>
+    </div>
+
+    <!-- HERO -->
     <div id="hero" class="card">
       <div class="hero-date" id="hero-date">—</div>
       <div><span class="hero-kcal" id="hero-kcal">—</span> <span class="hero-target" id="hero-target">/ —</span></div>
@@ -133,30 +163,30 @@ nav.tabs button.active { color: var(--blue); font-weight: 600; }
       </div>
     </div>
 
-    <div class="card">
-      <div class="page-title">Приёмы пищи</div>
-      <div id="meals"></div>
-    </div>
-
+    <!-- STOPLIST -->
     <div class="card" id="stoplist-card" style="display:none">
-      <div class="page-title">Сегодня в стоп-листе</div>
+      <div class="title">Сегодня в стоп-листе</div>
       <div id="stoplist"></div>
-    </div>
-
-    <div class="card">
-      <div class="page-title">Последние 60 дней</div>
-      <div class="heatmap" id="heatmap"></div>
     </div>
   </section>
 
+  <!-- WEIGHT -->
   <section class="section" data-section="weight">
     <div class="card">
-      <div class="page-title">Вес</div>
-      <div id="weight-now" style="font-size:48px;font-weight:700;margin:8px 0">—</div>
-      <div id="weight-info" style="color:var(--text-dim);font-size:14px">—</div>
+      <div class="title">История замеров</div>
+      <div class="heatmap" id="heatmap-weight"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span>есть замер</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--border)"></span>нет данных</span>
+      </div>
     </div>
     <div class="card">
-      <div class="page-title">График (90 дней)</div>
+      <div class="title">Текущий вес</div>
+      <div><span class="weight-now" id="weight-now">—</span> <span class="weight-unit">кг</span></div>
+      <div class="weight-info" id="weight-info">—</div>
+    </div>
+    <div class="card">
+      <div class="title">Динамика (90 дней)</div>
       <div class="chart-wrap"><canvas id="weight-chart"></canvas></div>
     </div>
   </section>
@@ -167,11 +197,19 @@ nav.tabs button.active { color: var(--blue); font-weight: 600; }
   </nav>
 </main>
 
-<script>
-// ============ ЗАШИФРОВАННЫЕ ДАННЫЕ ============
-const PAYLOAD = {"salt": "pN3TwYfsqsPqCLOIuIKtTQ==", "iv": "tZR1AfsSOLue8S0Y", "ciphertext": "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"};
+<!-- BOTTOM SHEET для деталей дня -->
+<div id="backdrop"></div>
+<div id="sheet">
+  <button id="sheet-close">×</button>
+  <div id="sheet-date">—</div>
+  <div><span id="sheet-kcal">—</span> <span style="font-size:14px;color:var(--text-dim)">ккал</span> <span id="sheet-zone">—</span></div>
+  <div id="sheet-macros" class="sheet-meta"></div>
+  <div style="margin-top:14px" id="sheet-meals"></div>
+  <div class="sheet-meta" id="sheet-extra"></div>
+</div>
 
-// ============ DEBUG MODE ============
+<script>
+const PAYLOAD = {"salt": "Y96Tv1R3HhcB917uiGkOJg==", "iv": "rl+lWfmfsZ+iGzUO", "ciphertext": "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"};
 const DEBUG = new URLSearchParams(location.search).has('debug');
 
 function debugLog(msg, obj) {
@@ -179,199 +217,232 @@ function debugLog(msg, obj) {
   const el = document.getElementById('debug');
   el.classList.add('visible');
   el.textContent += msg + (obj ? '\n' + JSON.stringify(obj, null, 2) : '') + '\n\n';
-  console.log(msg, obj);
 }
 
-// ============ ШИФРОВАНИЕ ============
-function b64ToBytes(b64) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
+function b64ToBytes(b64) { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
 
 async function decrypt(password, payload) {
-  const salt = b64ToBytes(payload.salt);
-  const iv = b64ToBytes(payload.iv);
-  const ct = b64ToBytes(payload.ciphertext);
   const enc = new TextEncoder();
   const km = await crypto.subtle.importKey('raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']);
   const key = await crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: b64ToBytes(payload.salt), iterations: 100000, hash: 'SHA-256' },
     km, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
   );
-  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(payload.iv) }, key, b64ToBytes(payload.ciphertext));
   return JSON.parse(new TextDecoder().decode(pt));
 }
 
-// ============ ВХОД ============
-let APP_DATA = null;
+let APP = null;
 
 async function login() {
   const pw = document.getElementById('password').value;
-  const errEl = document.getElementById('auth-error');
-  errEl.textContent = '';
-
+  const err = document.getElementById('auth-error');
+  err.textContent = '';
   try {
-    debugLog('PAYLOAD received', PAYLOAD);
-    const data = await decrypt(pw, PAYLOAD);
-    APP_DATA = data;
-    debugLog('Decrypted data', data);
+    APP = await decrypt(pw, PAYLOAD);
+    debugLog('decrypted', APP);
     document.getElementById('auth').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     render();
   } catch (e) {
-    errEl.textContent = 'Неверный пароль';
-    debugLog('Error: ' + e.message);
+    err.textContent = 'Неверный пароль';
+    debugLog('error: ' + e.message);
   }
 }
 
 document.getElementById('login-btn').addEventListener('click', login);
 document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('password').focus();
 
-// ============ РЕНДЕР ============
-function formatDate(s) {
-  const months = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
-  const d = new Date(s);
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
+const MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+const DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function fmtDate(s) { const d = new Date(s); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} (${DOW[d.getDay()]})`; }
+function fmtShort(s) { const d = new Date(s); return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`; }
 
-function getZone(kcal, cfg) {
-  if (kcal <= cfg.calorie_zones.green_max) return 'green';
-  if (kcal <= cfg.calorie_zones.yellow_max) return 'yellow';
-  return 'red';
+function getCalLimit() { return APP?.config?.calorie_zones?.green_max ?? 1900; }
+
+function classifyDay(day) {
+  if (!day) return 'empty';
+  const calOk = (day.totals?.kcal ?? 0) <= getCalLimit();
+  const trainOk = day.training_done === true;
+  if (calOk && trainOk) return 'full-green';
+  if (calOk && !trainOk) return 'top-green';
+  if (!calOk && trainOk) return 'top-red';
+  return 'full-red';
 }
 
 function render() {
-  const data = APP_DATA;
-  const cfg = data.config || { calorie_target: 1800, calorie_zones: { green_max: 1900, yellow_max: 2200 } };
-  const daily = data.daily || {};
-  const weight = data.weight || {};
-
+  const cfg = APP.config || {};
+  const daily = APP.daily || {};
+  const weight = APP.weight || {};
   const dates = Object.keys(daily).sort().reverse();
-  debugLog('Available dates', dates);
 
   if (dates.length === 0) {
     document.getElementById('hero-date').textContent = 'Нет данных';
-    return;
+  } else {
+    renderHero(dates[0], daily, cfg);
   }
+  renderHeatmap(daily, cfg);
+  renderWeight(weight, cfg);
+}
 
-  const lastDate = dates[0];
-  const day = daily[lastDate];
-  debugLog('Rendering day ' + lastDate, day);
-
-  // HERO
-  const totals = day.totals || { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+function renderHero(date, daily, cfg) {
+  const day = daily[date];
+  const totals = day.totals || {};
   const kcal = Math.round(totals.kcal || 0);
-  const zone = day.zone || getZone(kcal, cfg);
+  const limit = getCalLimit();
+  const zone = kcal <= limit ? 'green' : 'red';
 
-  document.getElementById('hero-date').textContent = formatDate(lastDate);
+  document.getElementById('hero-date').textContent = fmtDate(date);
   document.getElementById('hero-kcal').textContent = kcal;
-  document.getElementById('hero-target').textContent = '/ ' + cfg.calorie_target;
+  document.getElementById('hero-target').textContent = '/ ' + (cfg.calorie_target || 1800);
   document.getElementById('hero').className = 'card hero-zone-' + zone;
-  const pct = Math.min(100, (kcal / cfg.calorie_target) * 100);
-  document.getElementById('hero-bar-fill').style.width = pct + '%';
+  document.getElementById('hero-bar-fill').style.width = Math.min(100, (kcal / (cfg.calorie_target || 1800)) * 100) + '%';
   document.getElementById('m-protein').textContent = Math.round(totals.protein || 0) + 'г';
   document.getElementById('m-fat').textContent = Math.round(totals.fat || 0) + 'г';
   document.getElementById('m-carbs').textContent = Math.round(totals.carbs || 0) + 'г';
 
-  // MEALS
-  const byMeal = day.by_meal || {};
-  const mealOrder = ['Завтрак','2-й завтрак','Обед','Полдник','Ужин','Поздний перекус'];
-  const mealsEl = document.getElementById('meals');
-  mealsEl.innerHTML = '';
-  const maxMeal = Math.max(...Object.values(byMeal).map(v => v || 0), 1);
-  mealOrder.forEach(name => {
-    const k = Math.round(byMeal[name] || 0);
-    const w = (k / maxMeal) * 100;
-    mealsEl.insertAdjacentHTML('beforeend', `
-      <div class="meal-row">
-        <div class="meal-name">${name}</div>
-        <div class="meal-bar"><div class="meal-bar-fill" style="width:${w}%"></div></div>
-        <div class="meal-kcal">${k > 0 ? k : '—'}</div>
-      </div>
-    `);
-  });
-
-  // STOPLIST
   const hits = day.stoplist_hits || [];
   if (hits.length) {
     document.getElementById('stoplist-card').style.display = 'block';
     document.getElementById('stoplist').innerHTML = hits.map(h => `<span class="flag">${h}</span>`).join('');
+  } else {
+    document.getElementById('stoplist-card').style.display = 'none';
   }
+}
 
-  // HEATMAP
-  const hm = document.getElementById('heatmap');
+// HEATMAP — 60 дней слева направо. Самый старый — в левом верхнем углу, свежий — в правом нижнем.
+function renderHeatmap(daily, cfg) {
+  const dates = Object.keys(daily).sort().reverse();
+  const refDate = dates.length ? new Date(dates[0]) : new Date();
+  const hm = document.getElementById('heatmap-cal');
   hm.innerHTML = '';
-  const refDate = new Date(lastDate);
-  const cells = [];
+  // Идём от 59 дней назад до сегодня (свежий день — последний)
   for (let i = 59; i >= 0; i--) {
     const d = new Date(refDate);
     d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
-    const dayData = daily[ds];
-    let cls = 'cell';
-    if (dayData) {
-      const z = dayData.zone || getZone(dayData.totals?.kcal || 0, cfg);
-      cls += ' ' + z;
+    const day = daily[ds];
+    const cls = 'cell ' + classifyDay(day);
+    const cell = document.createElement('div');
+    cell.className = cls;
+    cell.dataset.date = ds;
+    cell.title = `${fmtShort(ds)}` + (day ? ` — ${Math.round(day.totals?.kcal || 0)} ккал` : '');
+    if (day) {
+      cell.addEventListener('click', () => openSheet(ds, day));
     }
-    cells.push(`<div class="${cls}" title="${ds}${dayData ? ': ' + Math.round(dayData.totals?.kcal || 0) + ' ккал' : ''}"></div>`);
+    hm.appendChild(cell);
   }
-  hm.innerHTML = cells.join('');
-
-  // WEIGHT
-  renderWeight(weight, cfg);
 }
 
+// HEATMAP веса — синий если есть замер
+function renderHeatmap_weight(weight) {
+  const dates = Object.keys(weight).sort();
+  const refDate = dates.length ? new Date(dates[dates.length - 1]) : new Date();
+  const hm = document.getElementById('heatmap-weight');
+  hm.innerHTML = '';
+  for (let i = 59; i >= 0; i--) {
+    const d = new Date(refDate);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const v = weight[ds];
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (v != null ? ' weight-yes' : '');
+    cell.title = `${fmtShort(ds)}` + (v != null ? ` — ${v} кг` : ' — нет данных');
+    hm.appendChild(cell);
+  }
+}
+
+let weightChart = null;
 function renderWeight(weight, cfg) {
+  renderHeatmap_weight(weight);
   const dates = Object.keys(weight).sort();
   if (dates.length === 0) {
     document.getElementById('weight-now').textContent = '—';
-    document.getElementById('weight-info').textContent = 'Нет данных по весу';
+    document.getElementById('weight-info').textContent = 'Нет данных';
     return;
   }
   const last = dates[dates.length - 1];
   const lastVal = weight[last];
-  document.getElementById('weight-now').textContent = lastVal + ' кг';
+  document.getElementById('weight-now').textContent = lastVal.toFixed(1);
   const target = cfg.weight_target_kg || 80;
-  document.getElementById('weight-info').textContent = `Цель: ${target} кг — осталось ${(lastVal - target).toFixed(1)} кг`;
+  const delta = (lastVal - target).toFixed(1);
+  document.getElementById('weight-info').textContent = `Цель: ${target} кг — осталось ${delta} кг (замер ${fmtShort(last)})`;
 
+  // Chart
   const since = new Date(); since.setDate(since.getDate() - 90);
-  const points = dates.filter(d => new Date(d) >= since).map(d => ({ x: d, y: weight[d] }));
+  const points = dates
+    .filter(d => new Date(d) >= since)
+    .map(d => ({ x: d, y: weight[d] }));
 
+  if (weightChart) weightChart.destroy();
   const ctx = document.getElementById('weight-chart').getContext('2d');
-  new Chart(ctx, {
+  weightChart = new Chart(ctx, {
     type: 'line',
-    data: {
-      datasets: [{
-        label: 'Вес',
-        data: points,
-        borderColor: '#58a6ff',
-        backgroundColor: 'rgba(88,166,255,0.1)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 3,
-      }, {
-        label: 'Цель',
-        data: points.map(p => ({ x: p.x, y: target })),
-        borderColor: '#3fb950',
-        borderDash: [4, 4],
-        pointRadius: 0,
-      }]
-    },
+    data: { datasets: [{
+      label: 'Вес, кг', data: points,
+      borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.12)',
+      fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6,
+      borderWidth: 2,
+    }, {
+      label: 'Цель', data: points.map(p => ({x:p.x, y: target})),
+      borderColor: '#3fb950', borderDash: [4,4], pointRadius: 0, borderWidth: 1.5,
+    }]},
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { type: 'time', time: { unit: 'day' }, ticks: { color: '#8b949e' } },
-        y: { ticks: { color: '#8b949e' } }
+        x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'd MMM' } }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e', callback: v => v.toFixed(1) }, grid: { color: '#21262d' } }
       },
-      plugins: { legend: { labels: { color: '#e6edf3' } } }
+      plugins: { legend: { labels: { color: '#e6edf3' } }, tooltip: { callbacks: { label: c => c.parsed.y.toFixed(1) + ' кг' } } }
     }
   });
 }
 
-// ============ TABS ============
+// BOTTOM SHEET
+function openSheet(date, day) {
+  const cfg = APP.config || {};
+  const limit = getCalLimit();
+  const totals = day.totals || {};
+  const kcal = Math.round(totals.kcal || 0);
+  const zone = kcal <= limit ? 'green' : 'red';
+
+  document.getElementById('sheet-date').textContent = fmtDate(date);
+  document.getElementById('sheet-kcal').textContent = kcal;
+  const zoneEl = document.getElementById('sheet-zone');
+  zoneEl.className = zone;
+  zoneEl.textContent = zone === 'green' ? 'в норме' : 'перебор';
+
+  document.getElementById('sheet-macros').innerHTML =
+    `Б <b>${Math.round(totals.protein||0)}г</b> · Ж <b>${Math.round(totals.fat||0)}г</b> · У <b>${Math.round(totals.carbs||0)}г</b>`;
+
+  const byMeal = day.by_meal || {};
+  const order = ['Завтрак','2-й завтрак','Обед','Полдник','Ужин','Поздний перекус'];
+  const lines = order.map(m => {
+    const k = Math.round(byMeal[m] || 0);
+    return `<div class="sheet-line"><span class="lbl">${m}</span><span>${k > 0 ? k + ' ккал' : '—'}</span></div>`;
+  });
+  document.getElementById('sheet-meals').innerHTML = lines.join('');
+
+  const trainStr = day.training_done ? `<b>${day.training_text || 'была'}</b>` : '<span style="color:var(--text-mute)">не было</span>';
+  const hits = day.stoplist_hits || [];
+  const hitsStr = hits.length ? hits.map(h => `<span class="flag">${h}</span>`).join('') : '<span style="color:var(--text-mute)">нет</span>';
+  document.getElementById('sheet-extra').innerHTML =
+    `<div style="margin-top:12px">Тренировка: ${trainStr}</div>` +
+    `<div style="margin-top:8px">Стоп-лист: ${hitsStr}</div>`;
+
+  document.getElementById('sheet').classList.add('visible');
+  document.getElementById('backdrop').classList.add('visible');
+}
+
+function closeSheet() {
+  document.getElementById('sheet').classList.remove('visible');
+  document.getElementById('backdrop').classList.remove('visible');
+}
+document.getElementById('sheet-close').addEventListener('click', closeSheet);
+document.getElementById('backdrop').addEventListener('click', closeSheet);
+
+// TABS
 document.querySelectorAll('nav.tabs button').forEach(b => {
   b.addEventListener('click', () => {
     const tab = b.dataset.tab;
@@ -379,8 +450,6 @@ document.querySelectorAll('nav.tabs button').forEach(b => {
     document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.dataset.section === tab));
   });
 });
-
-document.getElementById('password').focus();
 </script>
 </body>
 </html>

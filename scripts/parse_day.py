@@ -344,13 +344,23 @@ def process_day(date_str, source_file: str = None):
         meals = parse_meals(content)
         liquids = parse_liquids_table(content)
 
+    # Извлечение training_done и training_text
+    training_text = fm.get('training')
+    if training_text is None or (isinstance(training_text, str) and training_text.lower() in ('null', '', '—', 'нет', 'ничего', 'нету', '-', 'none')):
+        training_done = False
+        training_text = None
+    else:
+        training_done = True
+        training_text = str(training_text).strip()
+
     # Инициализируем запись дня
     day_record = {
         'date': date_str,
         'day_of_week': get_day_of_week(date_str),
         'weight_morning': fm.get('weight_morning'),
         'sleep_hours': fm.get('sleep_hours'),
-        'training': fm.get('training'),
+        'training_done': training_done,
+        'training_text': training_text,
         'binge': fm.get('binge', False),
         'mood': fm.get('mood'),
         'totals': {'kcal': 0, 'protein': 0, 'fat': 0, 'carbs': 0},
@@ -434,6 +444,7 @@ def process_day(date_str, source_file: str = None):
     print(f"  Калорий: {day_record['totals']['kcal']}/{config['calorie_target']} ({day_record['zone']})")
     print(f"  Белок: {day_record['totals']['protein']:.0f}г / Жиры: {day_record['totals']['fat']:.0f}г / Углеводы: {day_record['totals']['carbs']:.0f}г")
     print(f"  Вечер: {day_record['evening_kcal']} ккал")
+    print(f"  Тренировка: {'да' if day_record['training_done'] else 'нет'}")
     print(f"  Кофе: {day_record['drinks'].get('coffee_count', 0)}/2")
     print(f"  Вода: {day_record['drinks'].get('water_ml', 0)}/2000 мл")
 
