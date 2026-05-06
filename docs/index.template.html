@@ -311,16 +311,36 @@ function renderHero(date, daily, cfg) {
   }
 }
 
-// HEATMAP — 60 дней слева направо. Старый день — в левом верхнем углу, свежий — в правом нижнем.
+// HEATMAP — 60 дней. Начинается с первой даты данных (верх-лево) или последних 60 дней если накопилось много.
 function renderHeatmap(daily, cfg) {
-  const dates = Object.keys(daily).sort().reverse();
-  const refDate = dates.length ? new Date(dates[0]) : new Date();
+  const dates = Object.keys(daily).sort();
   const hm = document.getElementById('heatmap-cal');
   hm.innerHTML = '';
-  // Идём от 59 дней назад до сегодня (старый день — первый)
-  for (let i = 59; i >= 0; i--) {
-    const d = new Date(refDate);
-    d.setDate(d.getDate() - i);
+
+  // Определяем дату с которой начинается отображение
+  let startDate;
+  if (dates.length === 0) {
+    // Нет данных — стартуем с 59 дней назад от сегодня
+    startDate = new Date();
+    startDate.setDate(startDate.getDate() - 59);
+  } else {
+    const first = new Date(dates[0]);
+    const last = new Date(dates[dates.length - 1]);
+    const diffDays = Math.floor((last - first) / 86400000);
+    if (diffDays >= 59) {
+      // Накопилось больше 60 дней — показываем последние 60
+      startDate = new Date(last);
+      startDate.setDate(startDate.getDate() - 59);
+    } else {
+      // Данных мало — стартуем с первой даты
+      startDate = first;
+    }
+  }
+
+  // Заполняем 60 ячеек ВПЕРЁД от стартовой даты
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
     const ds = d.toISOString().split('T')[0];
     const day = daily[ds];
     const cls = 'cell ' + classifyDay(day);
@@ -338,12 +358,28 @@ function renderHeatmap(daily, cfg) {
 // HEATMAP веса — синий если есть замер
 function renderHeatmap_weight(weight) {
   const dates = Object.keys(weight).sort();
-  const refDate = dates.length ? new Date(dates[dates.length - 1]) : new Date();
   const hm = document.getElementById('heatmap-weight');
   hm.innerHTML = '';
-  for (let i = 59; i >= 0; i--) {
-    const d = new Date(refDate);
-    d.setDate(d.getDate() - i);
+
+  let startDate;
+  if (dates.length === 0) {
+    startDate = new Date();
+    startDate.setDate(startDate.getDate() - 59);
+  } else {
+    const first = new Date(dates[0]);
+    const last = new Date(dates[dates.length - 1]);
+    const diffDays = Math.floor((last - first) / 86400000);
+    if (diffDays >= 59) {
+      startDate = new Date(last);
+      startDate.setDate(startDate.getDate() - 59);
+    } else {
+      startDate = first;
+    }
+  }
+
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
     const ds = d.toISOString().split('T')[0];
     const v = weight[ds];
     const cell = document.createElement('div');
