@@ -2,7 +2,7 @@
   "2026-05-04": {
     "date": "2026-05-04",
     "day_of_week": "Пн",
-    "weight_morning": "null",
+    "weight_morning": 90.1,
     "sleep_hours": "null",
     "training_done": false,
     "training_text": null,
@@ -57,10 +57,10 @@
   "2026-05-05": {
     "date": "2026-05-05",
     "day_of_week": "Вт",
-    "weight_morning": "null",
+    "weight_morning": 90,
     "sleep_hours": "null",
-    "training_done": false,
-    "training_text": null,
+    "training_done": true,
+    "training_text": "есть",
     "binge": false,
     "mood": "null",
     "totals": {
@@ -107,9 +107,10 @@
   "2026-05-06": {
     "date": "2026-05-06",
     "day_of_week": "Ср",
-    "weight_morning": "null",
+    "weight_morning": 89.1,
     "sleep_hours": "null",
-    "training": "null",
+    "training_done": true,
+    "training_text": "есть",
     "binge": false,
     "mood": "null",
     "totals": {
