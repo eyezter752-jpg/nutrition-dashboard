@@ -311,14 +311,14 @@ function renderHero(date, daily, cfg) {
   }
 }
 
-// HEATMAP — 60 дней слева направо. Свежий день — в левом верхнем углу, старый — в правом нижнем.
+// HEATMAP — 60 дней слева направо. Старый день — в левом верхнем углу, свежий — в правом нижнем.
 function renderHeatmap(daily, cfg) {
   const dates = Object.keys(daily).sort().reverse();
   const refDate = dates.length ? new Date(dates[0]) : new Date();
   const hm = document.getElementById('heatmap-cal');
   hm.innerHTML = '';
-  // Идём от сегодня до 59 дней назад (свежий день — первый)
-  for (let i = 0; i < 60; i++) {
+  // Идём от 59 дней назад до сегодня (старый день — первый)
+  for (let i = 59; i >= 0; i--) {
     const d = new Date(refDate);
     d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
@@ -341,7 +341,7 @@ function renderHeatmap_weight(weight) {
   const refDate = dates.length ? new Date(dates[dates.length - 1]) : new Date();
   const hm = document.getElementById('heatmap-weight');
   hm.innerHTML = '';
-  for (let i = 0; i < 60; i++) {
+  for (let i = 59; i >= 0; i--) {
     const d = new Date(refDate);
     d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
