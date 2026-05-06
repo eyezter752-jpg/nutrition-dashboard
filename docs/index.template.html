@@ -144,8 +144,8 @@ nav.tabs button.active { color: var(--blue); font-weight: 600; }
       <div class="title">Последние 60 дней</div>
       <div class="heatmap" id="heatmap-cal"></div>
       <div class="legend">
-        <span class="legend-item"><span class="legend-swatch lg-full-green"></span>норма + тренировка</span>
-        <span class="legend-item"><span class="legend-swatch lg-top-green"></span>только норма</span>
+        <span class="legend-item"><span class="legend-swatch lg-full-green"></span>диета + тренировка</span>
+        <span class="legend-item"><span class="legend-swatch lg-top-green"></span>только диета</span>
         <span class="legend-item"><span class="legend-swatch lg-top-red"></span>только тренировка</span>
         <span class="legend-item"><span class="legend-swatch lg-full-red"></span>срыв</span>
       </div>
@@ -311,14 +311,14 @@ function renderHero(date, daily, cfg) {
   }
 }
 
-// HEATMAP — 60 дней слева направо. Самый старый — в левом верхнем углу, свежий — в правом нижнем.
+// HEATMAP — 60 дней слева направо. Свежий день — в левом верхнем углу, старый — в правом нижнем.
 function renderHeatmap(daily, cfg) {
   const dates = Object.keys(daily).sort().reverse();
   const refDate = dates.length ? new Date(dates[0]) : new Date();
   const hm = document.getElementById('heatmap-cal');
   hm.innerHTML = '';
-  // Идём от 59 дней назад до сегодня (свежий день — последний)
-  for (let i = 59; i >= 0; i--) {
+  // Идём от сегодня до 59 дней назад (свежий день — первый)
+  for (let i = 0; i < 60; i++) {
     const d = new Date(refDate);
     d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
@@ -341,7 +341,7 @@ function renderHeatmap_weight(weight) {
   const refDate = dates.length ? new Date(dates[dates.length - 1]) : new Date();
   const hm = document.getElementById('heatmap-weight');
   hm.innerHTML = '';
-  for (let i = 59; i >= 0; i--) {
+  for (let i = 0; i < 60; i++) {
     const d = new Date(refDate);
     d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
