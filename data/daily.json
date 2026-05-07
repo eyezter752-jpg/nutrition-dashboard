@@ -198,5 +198,55 @@
     "stoplist_hits": [],
     "zone": "red",
     "unknown_products": []
+  },
+  "2026-05-07": {
+    "date": "2026-05-07",
+    "day_of_week": "Чт",
+    "weight_morning": 89.9,
+    "sleep_hours": "null",
+    "training_done": true,
+    "training_text": "есть",
+    "binge": false,
+    "mood": "null",
+    "totals": {
+      "kcal": 2208,
+      "protein": 156.70000000000005,
+      "fat": 97.00000000000001,
+      "carbs": 182.2
+    },
+    "evening_kcal": 805,
+    "by_meal": {
+      "завтрак": 350,
+      "2-й завтрак": 106,
+      "обед": 854,
+      "полдник": 93,
+      "ужин": 805,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 1,
+      "tea_count": 0,
+      "water_ml": 3000,
+      "items": [
+        {
+          "drink": "---",
+          "volume": "---",
+          "count": 0
+        },
+        {
+          "drink": "кофе молотый с молоком и сахаром",
+          "volume": "200 мл",
+          "count": 1
+        },
+        {
+          "drink": "вода (стакан)",
+          "volume": "200 мл",
+          "count": 3
+        }
+      ]
+    },
+    "stoplist_hits": [],
+    "zone": "red",
+    "unknown_products": []
   }
 }
