@@ -161,6 +161,10 @@ nav.tabs button.active { color: var(--blue); font-weight: 600; }
         <div class="macro"><div class="macro-value" id="m-fat">—</div><div class="macro-label">Жиры</div></div>
         <div class="macro"><div class="macro-value" id="m-carbs">—</div><div class="macro-label">Углеводы</div></div>
       </div>
+      <div id="hero-training" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:14px;">
+        <span style="color:var(--text-dim);">Тренировка:</span>
+        <span id="hero-training-text" style="color:var(--text);">—</span>
+      </div>
     </div>
 
     <!-- STOPLIST -->
@@ -275,7 +279,8 @@ function render() {
   const cfg = APP.config || {};
   const daily = APP.daily || {};
   const weight = APP.weight || {};
-  const dates = Object.keys(daily).sort().reverse();
+  const today = new Date().toISOString().split('T')[0];
+  const dates = Object.keys(daily).filter(d => d <= today).sort().reverse();
 
   if (dates.length === 0) {
     document.getElementById('hero-date').textContent = 'Нет данных';
@@ -302,6 +307,14 @@ function renderHero(date, daily, cfg) {
   document.getElementById('m-fat').textContent = Math.round(totals.fat || 0) + 'г';
   document.getElementById('m-carbs').textContent = Math.round(totals.carbs || 0) + 'г';
 
+  // Тренировка
+  const trainText = day.training_done
+    ? (day.training_text || 'была')
+    : 'не было';
+  const trainEl = document.getElementById('hero-training-text');
+  trainEl.textContent = trainText;
+  trainEl.style.color = day.training_done ? 'var(--green)' : 'var(--text-mute)';
+
   const hits = day.stoplist_hits || [];
   if (hits.length) {
     document.getElementById('stoplist-card').style.display = 'block';
@@ -313,7 +326,8 @@ function renderHero(date, daily, cfg) {
 
 // HEATMAP — 60 дней. Начинается с первой даты данных (верх-лево) или последних 60 дней если накопилось много.
 function renderHeatmap(daily, cfg) {
-  const dates = Object.keys(daily).sort();
+  const today = new Date().toISOString().split('T')[0];
+  const dates = Object.keys(daily).filter(d => d <= today).sort();
   const hm = document.getElementById('heatmap-cal');
   hm.innerHTML = '';
 
@@ -348,7 +362,8 @@ function renderHeatmap(daily, cfg) {
 
 // HEATMAP веса — синий если есть замер
 function renderHeatmap_weight(weight) {
-  const dates = Object.keys(weight).sort();
+  const today = new Date().toISOString().split('T')[0];
+  const dates = Object.keys(weight).filter(d => d <= today).sort();
   const hm = document.getElementById('heatmap-weight');
   hm.innerHTML = '';
 

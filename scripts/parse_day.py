@@ -296,6 +296,12 @@ def get_day_of_week(date_str):
 
 def process_day(date_str, source_file: str = None):
     """Обработать день (из MD или .json.enc файла)"""
+    # Проверка что дата не в будущем
+    import datetime
+    today = datetime.date.today().isoformat()
+    if date_str > today:
+        raise ValueError(f'Дата {date_str} в будущем. Сегодня {today}. Прерываю парсинг.')
+
     if source_file is None:
         md_path = Path(f'meals/{date_str}.md')
         json_path = Path(f'meals/{date_str}.json.enc')
