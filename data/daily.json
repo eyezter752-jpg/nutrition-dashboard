@@ -238,8 +238,8 @@
     "day_of_week": "Сб",
     "weight_morning": 89,
     "sleep_hours": "null",
-    "training_done": false,
-    "training_text": null,
+    "training_done": true,
+    "training_text": "есть",
     "binge": false,
     "mood": "null",
     "totals": {
