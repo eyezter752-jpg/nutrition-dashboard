@@ -198,5 +198,107 @@
     "stoplist_hits": [],
     "zone": "red",
     "unknown_products": []
+  },
+  "2026-05-08": {
+    "date": "2026-05-08",
+    "day_of_week": "Пт",
+    "weight_morning": 90,
+    "sleep_hours": "null",
+    "training_done": false,
+    "training_text": null,
+    "binge": false,
+    "mood": "null",
+    "totals": {
+      "kcal": 2200,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 0
+    },
+    "evening_kcal": 2200,
+    "by_meal": {
+      "завтрак": 0,
+      "2-й завтрак": 0,
+      "обед": 0,
+      "полдник": 0,
+      "ужин": 2200,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 0,
+      "tea_count": 0,
+      "water_ml": 0,
+      "items": []
+    },
+    "stoplist_hits": [],
+    "zone": "green",
+    "unknown_products": []
+  },
+  "2026-05-09": {
+    "date": "2026-05-09",
+    "day_of_week": "Сб",
+    "weight_morning": 89,
+    "sleep_hours": "null",
+    "training_done": false,
+    "training_text": null,
+    "binge": false,
+    "mood": "null",
+    "totals": {
+      "kcal": 2400,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 0
+    },
+    "evening_kcal": 2400,
+    "by_meal": {
+      "завтрак": 0,
+      "2-й завтрак": 0,
+      "обед": 0,
+      "полдник": 0,
+      "ужин": 2400,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 0,
+      "tea_count": 0,
+      "water_ml": 0,
+      "items": []
+    },
+    "stoplist_hits": [],
+    "zone": "yellow",
+    "unknown_products": []
+  },
+  "2026-05-10": {
+    "date": "2026-05-10",
+    "day_of_week": "Вс",
+    "weight_morning": 89.3,
+    "sleep_hours": "null",
+    "training_done": false,
+    "training_text": null,
+    "binge": false,
+    "mood": "null",
+    "totals": {
+      "kcal": 0,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 0
+    },
+    "evening_kcal": 0,
+    "by_meal": {
+      "завтрак": 0,
+      "2-й завтрак": 0,
+      "обед": 0,
+      "полдник": 0,
+      "ужин": 0,
+      "поздний перекус": 0
+    },
+    "drinks": {
+      "coffee_count": 0,
+      "tea_count": 0,
+      "water_ml": 0,
+      "items": []
+    },
+    "stoplist_hits": [],
+    "zone": "white",
+    "unknown_products": []
   }
 }
